@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  name      String
+  password  String
+  createdAt DateTime      @default(now())
+  documents Document[]
+  attempts  QuizAttempt[]
+}
+
+model Document {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  chunks    DocumentChunk[]
+  messages  ChatMessage[]
+  quizzes   Quiz[]
+
+  @@index([userId])
+}
+
+model DocumentChunk {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  index      Int
+  content    String
+
+  @@index([documentId, index])
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  role       String
+  content    String
+  sources    Int[]    @default([])
+  createdAt  DateTime @default(now())
+
+  @@index([documentId, createdAt])
+}
+
+model Quiz {
+  id         String        @id @default(cuid())
+  documentId String
+  document   Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  questions  Json
+  createdAt  DateTime      @default(now())
+  attempts   QuizAttempt[]
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score     Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
